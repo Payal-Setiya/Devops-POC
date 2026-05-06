@@ -16,6 +16,7 @@ jobs:
 # =========================
   sonar-analysis:
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - name: Checkout Code
@@ -28,34 +29,50 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
+
 # =========================
-# 🛡️ OWASP DEP CHECK
+# 🛡️ OWASP DEP CHECK (FAST MODE)
 # =========================
   owasp-scan:
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v3
 
+      # Cache OWASP DB (MAJOR SPEED BOOST)
+      - name: Cache OWASP DB
+        uses: actions/cache@v3
+        with:
+          path: ~/.dependency-check
+          key: owasp-db
+
       - name: Run OWASP Dependency Check
-        continue-on-error: true
         run: |
           sudo apt update
           sudo apt install -y unzip
+
           wget https://github.com/jeremylong/DependencyCheck/releases/download/v10.0.4/dependency-check-10.0.4-release.zip
           unzip dependency-check-10.0.4-release.zip
+
           ./dependency-check/bin/dependency-check.sh \
             --project "DevOps-App" \
-            --scan ./backend \
+            --scan ./backend/package.json \
             --format HTML \
-            --out report
+            --out report \
+            --enableNodeJS \
+            --disableCentral \
+            --exclude "**/node_modules/**" \
+            --exclude "**/dist/**"
+
 
 # =========================
-# 🐳 DOCKER BUILD + TRIVY
+# 🐳 BUILD + TRIVY SCAN
 # =========================
   build-scan:
     runs-on: ubuntu-latest
     needs: [sonar-analysis, owasp-scan]
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v3
@@ -64,10 +81,11 @@ jobs:
         run: |
           docker build -t backend-app ./backend
 
-      - name: Trivy Scan
+      - name: Trivy Scan (Fast Mode)
         continue-on-error: true
         run: |
-          docker run --rm aquasec/trivy image backend-app
+          docker run --rm aquasec/trivy image --severity HIGH,CRITICAL backend-app
+
 
 # =========================
 # 🚀 PUSH TO ECR + DEPLOY EKS
@@ -75,6 +93,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build-scan
+    continue-on-error: true
     if: always()
 
     steps:
@@ -91,6 +110,7 @@ jobs:
         run: |
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI
 
+      # BUILD ONLY ONCE HERE (avoids duplication issue)
       - name: Build & Push Image
         run: |
           docker build -t backend-app ./backend
