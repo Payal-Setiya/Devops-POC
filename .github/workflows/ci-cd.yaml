@@ -71,7 +71,7 @@ jobs:
 # =========================
   build-scan:
     runs-on: ubuntu-latest
-    needs: [sonar-analysis, owasp-scan]
+    needs: [sonar-analysis]
     continue-on-error: true
 
     steps:
