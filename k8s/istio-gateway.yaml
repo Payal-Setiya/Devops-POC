@@ -17,17 +17,3 @@ spec:
     hosts:
     - "payal-eks-demo.online"
 
-    tls:
-      httpsRedirect: true
-
-  - port:
-      number: 443
-      name: https
-      protocol: HTTPS
-
-    tls:
-      mode: SIMPLE
-      credentialName: payal-eks-demo-tls
-
-    hosts:
-    - "payal-eks-demo.online"
