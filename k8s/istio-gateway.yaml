@@ -1,8 +1,10 @@
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
+
 metadata:
   name: app-gateway
   namespace: devops-poc
+
 spec:
   selector:
     istio: ingressgateway
@@ -17,3 +19,17 @@ spec:
     hosts:
     - "payal-eks-demo.online"
 
+    tls:
+      httpsRedirect: true
+
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+
+    tls:
+      mode: SIMPLE
+      credentialName: payal-eks-demo-tls
+
+    hosts:
+    - "payal-eks-demo.online"
