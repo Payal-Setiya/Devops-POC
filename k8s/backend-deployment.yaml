@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: 858986859635.dkr.ecr.eu-north-1.amazonaws.com/test/poc-repo:backend-latest # 🔴 replace this
+        image: 858986859635.dkr.ecr.eu-north-1.amazonaws.com/test/poc-repo:backend-latest
         ports:
         - containerPort: 5000
 
